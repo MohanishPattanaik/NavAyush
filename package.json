@@ -4,14 +4,20 @@
   "description": "Complete Panchakarma Management System with AI Scheduling",
   "private": true,
   "scripts": {
-    "dev": "cd ayursutra && npm run dev",
-    "server": "cd ayursutra && npm run server",
-    "client": "cd ayursutra && npm run client",
+    "install-deps": "cd ayursutra && npm install && cd frontend && npm install && cd ../backend && npm install",
+
+    // ✅ Local development scripts
+    "dev": "cd ayursutra && npm run dev", 
+    "server": "cd ayursutra && npm run server", 
+    "client": "cd ayursutra && npm run client", 
+
+    // ✅ Deployment scripts (Render will use these two)
+    "build": "cd ayursutra/frontend && npm install && npm run build && cp -r build ../backend/public",
+    "start": "cd ayursutra/backend && npm install && node server.js",
+
+    // ✅ Optional extra (still local only):
     "vercel-build": "cd ayursutra/frontend && npm install && npm run build",
-    "start": "cd ayursutra/frontend && npm start",
-    "build": "cd ayursutra/frontend && npm run build",
-    "test": "cd ayursutra/frontend && npm test",
-    "install-deps": "cd ayursutra && npm install && cd frontend && npm install && cd ../backend && npm install"
+    "test": "cd ayursutra/frontend && npm test"
   },
   "keywords": [
     "ayurveda",
@@ -24,7 +30,7 @@
   "author": "AyurSutra Team",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.0"
+    "concurrently": "^8.2.2"
   },
   "engines": {
     "node": ">=16.0.0",
