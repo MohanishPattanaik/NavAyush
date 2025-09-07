@@ -1,47 +1,50 @@
+// server.js
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const morgan = require('morgan');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Security middleware
+/* ---------------- Security Middleware ---------------- */
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: process.env.CLIENT_URL || '*', // In Render, frontend & backend share domain
   credentials: true
 }));
 
-// Rate limiting
+/* ---------------- Rate Limiting ---------------- */
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 100 // limit IP to 100 requests per window
 });
 app.use('/api/', limiter);
 
-// Body parsing middleware
+/* ---------------- Body Parsing & Compression ---------------- */
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
 
-// Logging
+/* ---------------- Logging ---------------- */
 app.use(morgan('combined'));
 
-// Health check endpoint
+/* ---------------- Health Check ---------------- */
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development'
   });
 });
 
-// API Routes
+/* ---------------- API Routes ---------------- */
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/patients', require('./routes/patients'));
@@ -50,24 +53,32 @@ app.use('/api/treatments', require('./routes/treatments'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/analytics', require('./routes/analytics'));
 
-// Error handling middleware
+/* ---------------- Serve Frontend Build ---------------- */
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
+
+// All non-API routes send back React’s index.html
+app.get('*', (req, res) => {
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(publicPath, 'index.html'));
+  } else {
+    res.status(404).json({ message: 'API route not found' });
+  }
+});
+
+/* ---------------- Error Handling ---------------- */
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
+  res.status(500).json({
     message: 'Something went wrong!',
     error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ message: 'Route not found' });
-});
-
-// Export the app for serverless environments (Vercel) and start server locally
+/* ---------------- Start Server ---------------- */
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`🚀 AyurSutra Backend Server running on port ${PORT}`);
+    console.log(`🚀 AyurSutra Backend + Frontend Server running on port ${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   });
